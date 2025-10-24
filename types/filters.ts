@@ -91,6 +91,10 @@ export type FilterAction =
       payload: ProductCategory;
     }
   | {
+      type: 'TOGGLE_CATEGORY';
+      payload: ProductCategory;
+    }
+  | {
       type: 'SET_PRICE_RANGE';
       payload: { min: number; max: number };
     }

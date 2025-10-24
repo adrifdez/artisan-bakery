@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify": "bash scripts/verify-quality.sh",
+    "check": "npx tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
