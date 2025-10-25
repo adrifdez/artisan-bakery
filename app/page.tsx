@@ -1,7 +1,19 @@
+/**
+ * Home Page
+ *
+ * Main landing page for the Artisan Bakery Supply Store.
+ * Displays the search interface with products, filters, and search functionality.
+ *
+ * Server Component that renders client components (SearchInterface, ErrorBoundary).
+ */
+
+import { SearchInterface } from '@/components/SearchInterface';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">Artisan Bakery Store</h1>
-    </div>
+    <ErrorBoundary>
+      <SearchInterface />
+    </ErrorBoundary>
   );
 }

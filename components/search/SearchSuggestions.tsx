@@ -26,18 +26,41 @@ import { TrendingUp, Package } from 'lucide-react';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { cn } from '@/lib/utils/cn';
 import type { BakeryProduct } from '@/types/product';
+import type { ProductIndexItem } from '@/hooks/useProductIndex';
+import { searchIndex } from '@/hooks/useProductIndex';
 import { SearchHighlight } from './SearchHighlight';
 
 export interface SearchSuggestionsProps {
   /**
-   * Current search results to generate suggestions from
+   * Product index for instant suggestions (Phase 1 - priority)
+   * Used when products haven't loaded yet for instant autocomplete
+   */
+  index: ReadonlyArray<ProductIndexItem>;
+
+  /**
+   * Current search results to generate enriched suggestions from (Phase 2)
+   * Used when available to provide richer suggestions with more context
    */
   products: ReadonlyArray<BakeryProduct>;
 
   /**
-   * Current search query (for highlighting)
+   * Loading state from the products API
+   * When true, use index for instant suggestions
+   * When false, use products for enriched suggestions
+   */
+  isLoadingProducts: boolean;
+
+  /**
+   * Raw search query (without debounce) for instant index searching
+   * Used for Phase 1 instant suggestions
    */
   query: string;
+
+  /**
+   * Debounced search query used by the API
+   * Used to detect when we're in debounce period
+   */
+  debouncedQuery: string;
 
   /**
    * Whether the suggestions dropdown is open
@@ -98,7 +121,32 @@ function createCategorySuggestion(category: string): Suggestion {
 }
 
 /**
- * Generate suggestions from products
+ * Generate suggestions from index (Phase 1 - instant)
+ * Uses lightweight index data for immediate autocomplete feedback
+ */
+function generateSuggestionsFromIndex(
+  index: ReadonlyArray<ProductIndexItem>,
+  query: string,
+  maxSuggestions: number
+): Array<Suggestion> {
+  if (!query.trim() || index.length === 0) {
+    return [];
+  }
+
+  // Use the searchIndex function for instant local filtering
+  const matches = searchIndex(query, index, maxSuggestions);
+
+  // Convert index items to suggestions
+  return matches.map((item) => ({
+    text: item.name,
+    category: item.category,
+    type: 'product' as const,
+  }));
+}
+
+/**
+ * Generate suggestions from products (Phase 2 - enriched)
+ * Uses full product data for richer suggestions with more context
  */
 function generateSuggestions(
   products: ReadonlyArray<BakeryProduct>,
@@ -143,8 +191,11 @@ function generateSuggestions(
 }
 
 export function SearchSuggestions({
+  index,
   products,
+  isLoadingProducts,
   query,
+  debouncedQuery,
   isOpen,
   onSelect,
   onClose,
@@ -152,7 +203,24 @@ export function SearchSuggestions({
   className,
 }: SearchSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const suggestions = generateSuggestions(products, query, maxSuggestions);
+
+  // Progressive 2-phase strategy for autocomplete:
+  // Phase 1 (instant): Use index when in debounce period OR API is loading
+  //   - Provides 0ms latency with raw query
+  //   - User sees instant feedback while typing
+  // Phase 2 (enriched): Use products when API finishes AND debounce complete
+  //   - Provides richer context from full product data
+  const useInstantSuggestions =
+    query !== debouncedQuery ||  // We're in debounce period (query is ahead)
+    isLoadingProducts ||         // API is currently loading
+    products.length === 0;       // No products available yet
+
+  const suggestions = useInstantSuggestions
+    ? generateSuggestionsFromIndex(index, query, maxSuggestions)  // Use raw query for instant search
+    : generateSuggestions(products, debouncedQuery, maxSuggestions); // Use debounced query for consistency
+
+  // Use the appropriate query for highlighting based on which phase we're in
+  const highlightQuery = useInstantSuggestions ? query : debouncedQuery;
 
   // Keyboard navigation
   const { activeIndex, handleKeyDown, reset } = useKeyboardNavigation({
@@ -254,7 +322,7 @@ export function SearchSuggestions({
             {/* Suggestion text with highlighting */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-light dark:text-text-dark truncate">
-                <SearchHighlight text={suggestion.text} query={query} />
+                <SearchHighlight text={suggestion.text} query={highlightQuery} />
               </p>
               {suggestion.type === 'product' && suggestion.category && (
                 <p className="text-xs text-text-muted-light dark:text-text-muted-dark capitalize">

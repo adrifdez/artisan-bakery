@@ -6,6 +6,7 @@
  */
 
 import type { ProductCategory } from './product';
+import { PRICE_RANGE } from '@/lib/data/helpers';
 
 /**
  * Filter logic mode for multi-select filters
@@ -60,18 +61,19 @@ export interface FilterState {
 
 /**
  * Empty filter state (no filters applied)
+ * Uses dynamically calculated price range from product data
  */
 export const EMPTY_FILTER_STATE: FilterState = {
   categories: new Set<ProductCategory>(),
   priceRange: {
-    min: 0,
-    max: 5000,
+    min: PRICE_RANGE.min,
+    max: PRICE_RANGE.max,
   },
   minRating: 0,
   inStock: undefined,
   organic: undefined,
   logicMode: 'AND',
-} as const;
+};
 
 /**
  * Discriminated union for filter actions
@@ -132,10 +134,13 @@ export interface ActiveFilters {
 
 /**
  * Calculates the number of active filters
+ * Uses dynamic price range from product data to determine if price filter is active
  */
 export function getActiveFilterCount(state: FilterState): ActiveFilters {
   const categoryCount = state.categories.size;
-  const hasPriceFilter = state.priceRange.min > 0 || state.priceRange.max < 5000;
+  const hasPriceFilter =
+    state.priceRange.min > PRICE_RANGE.min ||
+    state.priceRange.max < PRICE_RANGE.max;
   const hasRatingFilter = state.minRating > 0;
   const hasStockFilter = state.inStock !== undefined;
   const hasOrganicFilter = state.organic !== undefined;

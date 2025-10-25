@@ -62,6 +62,16 @@ export interface SearchBarProps {
    * Keyboard event handler (for integrating with suggestions)
    */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+
+  /**
+   * Focus event handler
+   */
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+
+  /**
+   * Blur event handler
+   */
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export function SearchBar({
@@ -72,6 +82,8 @@ export function SearchBar({
   autoFocus = false,
   className,
   onKeyDown,
+  onFocus,
+  onBlur,
 }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +105,7 @@ export function SearchBar({
         // Container styles from designs/searchResults.html
         'flex w-full items-stretch',
         'rounded-full h-12',
+        'overflow-hidden',
         'bg-surface-subtle-light dark:bg-surface-subtle-dark',
         className
       )}
@@ -113,6 +126,8 @@ export function SearchBar({
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
         placeholder={placeholder}
         autoFocus={autoFocus}
         className={cn(

@@ -74,6 +74,7 @@ export interface BaseProduct {
   readonly description: string;
   readonly imageUrl: string;
   readonly inStock: boolean;
+  readonly stockQuantity?: number; // undefined or 0 = out of stock, 1-9 = low stock, 10+ = in stock
   readonly rating: number; // 0-5 stars
   readonly reviewCount: number;
   readonly tags: ReadonlyArray<string>;
