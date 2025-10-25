@@ -4,7 +4,7 @@ A modern, real-time product search interface for professional bakers, built with
 
 ## Live Demo
 
-**[View Live Demo →](https://artisan-bakery-vercel.vercel.app/)**
+**[View Live Demo →](https://artisan-bakery-three.vercel.app/)**
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-14+-black)
