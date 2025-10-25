@@ -138,6 +138,11 @@ export const ProductCard = React.memo<ProductCardProps>(({ product, searchQuery 
           </span>
         </div>
 
+        {/* Product Description */}
+        <p className="text-sm text-text-muted-light dark:text-text-muted-dark leading-relaxed">
+          <SearchHighlight text={product.description} query={searchQuery || ''} />
+        </p>
+
         {/* Price & Stock Badge */}
         <div className="flex items-center justify-between pt-2">
           {/* Price */}
