@@ -100,7 +100,7 @@ export const POPULAR_TAGS: ReadonlyArray<string> = Array.from(
     }, new Map<string, number>())
     .entries()
 )
-  .sort((a, b) => b[1] - a[1])
+  .toSorted((a, b) => b[1] - a[1])
   .slice(0, 10)
   .map(([tag]) => tag);
 

@@ -29,20 +29,17 @@ import { SearchSuggestions } from './search/SearchSuggestions';
 import { RecentSearches } from './search/RecentSearches';
 import { FilterSheet } from './filters/FilterSheet';
 import { FilterTag } from './filters/FilterTag';
-import { ProductGrid, EmptyState, ErrorState, createSkeletonArray } from './products';
+import { ProductGrid, EmptyState, ErrorState, createSkeletonArray, SortSelect } from './products';
+import type { SortOption } from './products/SortSelect';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchAPI } from '@/hooks/useSearchAPI';
 import { useProductIndex } from '@/hooks/useProductIndex';
 import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { useFilters } from '@/hooks/useFilters';
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { cn } from '@/lib/utils/cn';
 import { PRICE_RANGE } from '@/lib/data/helpers';
 import type { BakeryProduct } from '@/types/product';
-
-/**
- * Sort options for products
- */
-type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'rating';
 
 /**
  * Active filter tag structure
@@ -88,6 +85,42 @@ export function SearchInterface() {
   );
 
   const { searches, addSearch } = useRecentSearches();
+
+  // Track current suggestions for keyboard navigation
+  const suggestionsRef = React.useRef<ReadonlyArray<{ text: string }>>([]);
+
+  // Keyboard navigation for suggestions
+  const { activeIndex, handleKeyDown: hookHandleKeyDown, reset: resetKeyboardNav } = useKeyboardNavigation({
+    itemCount: suggestionsRef.current.length,
+    onSelect: (index) => {
+      // When Enter is pressed, select the suggestion at the active index
+      const suggestion = suggestionsRef.current[index];
+      if (suggestion) {
+        handleSuggestionSelect(suggestion.text);
+      }
+    },
+    onEscape: () => {
+      setShowSuggestions(false);
+      resetKeyboardNav();
+    },
+    isEnabled: showSuggestions && query.length > 0,
+  });
+
+  // Wrap keyboard handler to close suggestions on Enter without selection
+  const handleKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // If Enter is pressed without active selection, save query and close suggestions
+    if (e.key === 'Enter' && activeIndex === -1 && showSuggestions) {
+      e.preventDefault();
+      // Save the current query to recent searches
+      if (query.trim()) {
+        addSearch(query.trim());
+      }
+      setShowSuggestions(false);
+      return;
+    }
+    // Otherwise use the hook's handler
+    hookHandleKeyDown(e);
+  }, [hookHandleKeyDown, activeIndex, showSuggestions, query, addSearch]);
 
   // ========== Search Handlers ==========
   const handleSearchChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -213,6 +246,7 @@ export function SearchInterface() {
               onClear={handleClearSearch}
               onFocus={handleFocus}
               onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
               placeholder="Search flours, bannetons, ovens..."
             />
 
@@ -226,6 +260,10 @@ export function SearchInterface() {
               isOpen={showSuggestions && query.length > 0}
               onSelect={handleSuggestionSelect}
               onClose={() => setShowSuggestions(false)}
+              activeIndex={activeIndex}
+              onSuggestionsChange={(suggestions) => {
+                suggestionsRef.current = suggestions;
+              }}
             />
 
             {/* RecentSearches - Shows when input is empty AND has focus */}
@@ -283,27 +321,7 @@ export function SearchInterface() {
           </p>
 
           {/* Sort Dropdown */}
-          <label className="flex flex-col">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className={cn(
-                'form-select flex w-full min-w-0 flex-1 resize-none overflow-hidden',
-                'rounded-full text-text-light dark:text-text-dark',
-                'focus:outline-0 focus:ring-0',
-                'border border-dough dark:border-subtle-dark',
-                'bg-transparent dark:bg-subtle-dark focus:border-primary',
-                'h-10 placeholder:text-text-muted-light py-0 pl-4 pr-10',
-                'text-sm font-medium leading-normal cursor-pointer'
-              )}
-              aria-label="Sort products"
-            >
-              <option value="relevance">Sort by: Relevance</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Highest Rated</option>
-            </select>
-          </label>
+          <SortSelect value={sortBy} onValueChange={setSortBy} />
         </div>
 
         {/* ========== Conditional Content Rendering ========== */}

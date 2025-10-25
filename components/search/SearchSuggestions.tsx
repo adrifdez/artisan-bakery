@@ -23,7 +23,6 @@
 
 import { useEffect, useRef } from 'react';
 import { TrendingUp, Package } from 'lucide-react';
-import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { cn } from '@/lib/utils/cn';
 import type { BakeryProduct } from '@/types/product';
 import type { ProductIndexItem } from '@/hooks/useProductIndex';
@@ -76,6 +75,18 @@ export interface SearchSuggestionsProps {
    * Callback to close the suggestions dropdown
    */
   onClose: () => void;
+
+  /**
+   * Current active index from keyboard navigation
+   * Managed by parent (SearchInterface)
+   */
+  activeIndex: number;
+
+  /**
+   * Callback when suggestions change
+   * Used by parent to update keyboard navigation and handle Enter key
+   */
+  onSuggestionsChange?: (suggestions: ReadonlyArray<{ text: string }>) => void;
 
   /**
    * Maximum number of suggestions to show
@@ -198,7 +209,8 @@ export function SearchSuggestions({
   debouncedQuery,
   isOpen,
   onSelect,
-  onClose,
+  activeIndex,
+  onSuggestionsChange,
   maxSuggestions = 5,
   className,
 }: SearchSuggestionsProps) {
@@ -222,20 +234,12 @@ export function SearchSuggestions({
   // Use the appropriate query for highlighting based on which phase we're in
   const highlightQuery = useInstantSuggestions ? query : debouncedQuery;
 
-  // Keyboard navigation
-  const { activeIndex, handleKeyDown, reset } = useKeyboardNavigation({
-    itemCount: suggestions.length,
-    onSelect: (index) => {
-      if (suggestions[index]) {
-        onSelect(suggestions[index].text);
-      }
-    },
-    onEscape: () => {
-      onClose();
-      reset();
-    },
-    isEnabled: isOpen,
-  });
+  // Notify parent of suggestions changes for keyboard navigation
+  useEffect(() => {
+    if (onSuggestionsChange) {
+      onSuggestionsChange(suggestions);
+    }
+  }, [suggestions, onSuggestionsChange]);
 
   // Scroll active item into view
   useEffect(() => {
@@ -246,13 +250,6 @@ export function SearchSuggestions({
       activeItem?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [activeIndex]);
-
-  // Reset on close
-  useEffect(() => {
-    if (!isOpen) {
-      reset();
-    }
-  }, [isOpen, reset]);
 
   // Don't render if closed or no suggestions
   if (!isOpen || suggestions.length === 0) {
@@ -289,7 +286,6 @@ export function SearchSuggestions({
             role="option"
             aria-selected={index === activeIndex}
             onClick={() => onSelect(suggestion.text)}
-            onKeyDown={handleKeyDown}
             className={cn(
               'flex items-center gap-3',
               'px-4 py-3',

@@ -15,3 +15,5 @@ export { ProductGrid } from './ProductGrid';
 export { ProductSkeleton, createSkeletonArray } from './ProductSkeleton';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
+export { SortSelect } from './SortSelect';
+export type { SortOption } from './SortSelect';

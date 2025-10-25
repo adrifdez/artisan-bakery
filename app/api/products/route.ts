@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { MOCK_PRODUCTS } from '@/lib/data/products';
+import { PRICE_RANGE } from '@/lib/data/helpers';
 import type { BakeryProduct } from '@/types/product';
 import { isFlourProduct, isOvenProduct } from '@/types/product';
 
@@ -367,8 +368,8 @@ export async function GET(request: Request): Promise<NextResponse> {
             .map((c) => c.trim())
             .filter((c) => c.length > 0)
         : [],
-      minPrice: Number(searchParams.get('minPrice')) || 0,
-      maxPrice: Number(searchParams.get('maxPrice')) || 5000,
+      minPrice: Number(searchParams.get('minPrice')) || PRICE_RANGE.min,
+      maxPrice: Number(searchParams.get('maxPrice')) || PRICE_RANGE.max,
       minRating: Number(searchParams.get('minRating')) || 0,
       inStock:
         searchParams.get('inStock') === 'true'
@@ -399,12 +400,11 @@ export async function GET(request: Request): Promise<NextResponse> {
               matches: findMatches(product.name, params.q),
             })
           )
-          .filter((result) => result.score > 0)
-          // Use spread to create new array before sorting (immutable)
-          .sort((a, b) => b.score - a.score)
+          .filter((result) => result.score >= 20)
+          .toSorted((a, b) => b.score - a.score)
           .map((r) => r.product)
-      : // No search query: sort by rating (immutable with spread)
-        [...filteredProducts].sort((a, b) => b.rating - a.rating);
+      : 
+        filteredProducts.toSorted((a, b) => b.rating - a.rating);
 
     // Return results
     return NextResponse.json(finalResults);
